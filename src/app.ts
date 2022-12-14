@@ -1,6 +1,6 @@
 import './utils/env'
 import { App, LogLevel } from '@slack/bolt'
-import { ChatGPTAPI, getOpenAIAuth } from 'chatgpt'
+import { Server as WebSocketServer } from 'ws'
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -10,6 +10,56 @@ const app = new App({
   socketMode: true,
 })
 
+function sendStatusCheckMessage(connected: boolean) {
+  return app.client.chat.postMessage({
+    token: app.client.token as string,
+    channel: process.env.STATUS_CHECK_SLACK_MEMBER as string,
+    text: `ChatGPT WebSocket ${connected ? 'connected :white_check_mark:' : 'disconnected :x:'}`,
+  })
+}
+
+const ws = new WebSocketServer({ port: parseInt(process.env.WS_PORT || '3001') })
+
+type Payload = { text: string; ts: string; thread_ts?: string; channel: string }
+
+ws.on('connection', (socket) => {
+  sendStatusCheckMessage(true)
+
+  socket.on('message', (message) => {
+    const packet = JSON.parse(message.toString())
+
+    switch (packet.type) {
+      case 'response':
+        handleWSResponse(packet.payload)
+        return
+    }
+  })
+})
+
+ws.on('close', () => {
+  sendStatusCheckMessage(false)
+})
+
+function sendWSPrompt(payload: Payload) {
+  ws.clients.forEach((client) => {
+    client.send(
+      JSON.stringify({
+        type: 'prompt',
+        payload,
+      })
+    )
+  })
+}
+
+async function handleWSResponse(response: Payload) {
+  await app.client.chat.postMessage({
+    token: app.client.token as string,
+    channel: response.channel,
+    thread_ts: response.thread_ts ?? response.ts,
+    text: response.text,
+  })
+}
+
 app.use(async ({ next }) => {
   await next()
 })
@@ -17,12 +67,12 @@ app.use(async ({ next }) => {
 const whitelistedChannels = [
   // #chatgpt-test for Cali's testing
   'C04EXK6T85U',
+  // #chatgpt-playground for the public
+  'C04F7ML901G',
 ]
 
-let chatGPT: ChatGPTAPI
-
 // Listens to incoming messages that contain "hello"
-app.message(async ({ message, say }) => {
+app.message(/^q\?/, async ({ message }) => {
   // Filter out messages from channels that are not whitelisted
   if (!whitelistedChannels.includes(message.channel)) {
     return
@@ -30,37 +80,26 @@ app.message(async ({ message, say }) => {
 
   // Filter out message events with subtypes (see https://api.slack.com/events/message)
   if (message.subtype === undefined || message.subtype === 'bot_message') {
-    const { text } = message
+    const { text, ts, channel, thread_ts } = message
     // check if the message is a valid string
-    if (typeof text !== 'string' || text?.trim() === '') {
+    if (typeof text !== 'string') {
       return
     }
 
-    const pendingMessage = await say({
-      thread_ts: message.ts,
-      blocks: [
-        {
-          type: 'section',
-          text: {
-            type: 'mrkdwn',
-            text: `<@${message.user}> 处理中... 稍等一下!`,
-          },
-        },
-      ],
-      text: `<@${message.user}> 处理中... 稍等一下!`,
-    })
+    const prompt = text?.replace(/^q\?/, '').trim()
 
-    const chatGPTResponse = await chatGPT.sendMessage(text)
-
-    console.log(chatGPTResponse)
-
-    // delete the pending message
-    if (pendingMessage.ts) {
-      await app.client.chat.delete({
-        ts: pendingMessage.ts,
-        channel: message.channel,
-      })
+    if (prompt.length === 0) {
+      return
     }
+
+    sendWSPrompt({ text: prompt, ts, thread_ts, channel })
+
+    await app.client.reactions.add({
+      token: app.client.token as string,
+      name: 'typingcat',
+      channel,
+      timestamp: ts,
+    })
   }
 })
 ;(async () => {
@@ -68,12 +107,4 @@ app.message(async ({ message, say }) => {
   await app.start(Number(process.env.PORT) || 3000)
 
   console.log('⚡️ Bolt app is running!')
-
-  const openAIAuth = await getOpenAIAuth({
-    email: process.env.OPENAI_EMAIL,
-    password: process.env.OPENAI_PASSWORD,
-  })
-  chatGPT = new ChatGPTAPI({ ...openAIAuth })
-  const result = await chatGPT.ensureAuth()
-  console.log('ChatGPT Auth Result: ', result)
 })()
