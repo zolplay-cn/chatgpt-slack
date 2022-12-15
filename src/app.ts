@@ -1,6 +1,7 @@
 import './utils/env';
 import { App, LogLevel } from '@slack/bolt';
 import { Server as WebSocketServer } from 'ws';
+import { NodeHtmlMarkdown } from 'node-html-markdown';
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -9,8 +10,13 @@ const app = new App({
   logLevel: LogLevel.INFO,
   socketMode: true,
 });
-
+const ws = new WebSocketServer({ port: parseInt(process.env.WS_PORT || '3001') });
 const notifiee = process.env.STATUS_CHECK_SLACK_MEMBER as string;
+const markdownParser = new NodeHtmlMarkdown({
+  strongDelimiter: '*',
+  strikeDelimiter: '~',
+  bulletMarker: '-',
+});
 
 function sendStatusCheckMessage(connected: boolean | string) {
   return app.client.chat.postMessage({
@@ -22,8 +28,6 @@ function sendStatusCheckMessage(connected: boolean | string) {
         : connected,
   });
 }
-
-const ws = new WebSocketServer({ port: parseInt(process.env.WS_PORT || '3001') });
 
 type Payload = { text: string; ts: string; thread_ts?: string; channel: string };
 
@@ -67,11 +71,21 @@ function sendWSPrompt(payload: Payload) {
 }
 
 async function handleWSResponse(response: Payload) {
+  const mrkdwn = markdownParser.translate(response.text);
   await app.client.chat.postMessage({
     token: app.client.token as string,
     channel: response.channel,
     thread_ts: response.thread_ts ?? response.ts,
-    text: response.text,
+    text: mrkdwn,
+    blocks: [
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: mrkdwn,
+        },
+      },
+    ],
   });
 }
 
