@@ -9,14 +9,11 @@
   },
   "dependencies": {
     "@slack/bolt": "^3.12.2",
-    "chatgpt": "^2.3.1",
     "dotenv": "^16.0.3",
-    "puppeteer": "^19.4.0",
     "ws": "^8.11.0"
   },
   "devDependencies": {
     "eslint": "^8.29.0",
-    "nodemon": "^2.0.7",
     "prettier": "^2.8.1",
     "tsup": "^6.5.0",
     "tsx": "^3.12.1",
