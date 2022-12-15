@@ -26,7 +26,7 @@ function enterPromptAndWaitForResponse(payload, onResponded = (payload) => {}) {
           observer.disconnect();
           onResponded({
             ...payload,
-            text: container.innerText,
+            text: container.innerHTML,
           });
         }
       });
