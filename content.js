@@ -22,7 +22,7 @@ function enterPromptAndWaitForResponse(payload, onResponded = (payload) => {}) {
         const dataId = document.querySelector(TEXTAREA_SELECTOR).getAttribute('data-id');
         const container = mutation.target.querySelector(`div[class^='${dataId}']`);
         const buttons = container?.parentNode?.parentNode?.querySelectorAll('button');
-        if (container && buttons && buttons.length === 2) {
+        if (container && buttons && buttons.length >= 2) {
           observer.disconnect();
           onResponded({
             ...payload,
