@@ -16,6 +16,12 @@ const markdownParser = new NodeHtmlMarkdown({
   strongDelimiter: '*',
   strikeDelimiter: '~',
   bulletMarker: '-',
+  ignore: ['button', 'svg'],
+  codeFence: '```',
+  // textReplace: [
+  //   [/\<span/g, '<p'],
+  //   [/\span\>/g, 'p>'],
+  // ],
 });
 
 function sendStatusCheckMessage(connected: boolean | string) {
@@ -138,7 +144,27 @@ app.message(/^q\?/, async ({ message, say }) => {
 });
 (async () => {
   // Start your app
-  await app.start(Number(process.env.PORT) || 3000);
+  // await app.start(Number(process.env.PORT) || 3000);
 
-  console.log('⚡️ Bolt app is running!');
+  // console.log('⚡️ Bolt app is running!');
+  console.log(
+    markdownParser.translate(`<p>Sure, here is an example of a basic React button component:</p><pre><div class="bg-black mb-4 rounded-md"><div class="flex items-center relative text-gray-200 bg-gray-800 px-4 py-2 text-xs font-sans"><button class="flex ml-auto gap-2"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>Copy code</button></div><div class="p-4"><code class="!whitespace-pre-wrap hljs language-javascript"><span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">Button</span> = (<span class="hljs-params">{ text, onClick }</span>) =&gt; (
+  <span class="xml"><span class="hljs-tag">&lt;<span class="hljs-name">button</span> <span class="hljs-attr">onClick</span>=<span class="hljs-string">{onClick}</span>&gt;</span>{text}<span class="hljs-tag">&lt;/<span class="hljs-name">button</span>&gt;</span></span>
+);
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">Button</span>;
+</code></div></div></pre><p>This component takes in two props: <code>text</code> and <code>onClick</code>. The <code>text</code> prop is used to specify the text that should be displayed on the button, and the <code>onClick</code> prop is a function that will be called when the button is clicked.</p><p>You can use this component in your React app like this:</p><pre><div class="bg-black mb-4 rounded-md"><div class="flex items-center relative text-gray-200 bg-gray-800 px-4 py-2 text-xs font-sans"><button class="flex ml-auto gap-2"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>Copy code</button></div><div class="p-4"><code class="!whitespace-pre-wrap hljs language-javascript"><span class="hljs-keyword">import</span> <span class="hljs-title class_">React</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'react'</span>;
+<span class="hljs-keyword">import</span> <span class="hljs-title class_">Button</span> <span class="hljs-keyword">from</span> <span class="hljs-string">'./Button'</span>;
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">App</span> = (<span class="hljs-params"></span>) =&gt; {
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">handleClick</span> = (<span class="hljs-params"></span>) =&gt; {
+    <span class="hljs-comment">// do something when the button is clicked</span>
+  };
+
+  <span class="hljs-keyword">return</span> <span class="xml"><span class="hljs-tag">&lt;<span class="hljs-name">Button</span> <span class="hljs-attr">text</span>=<span class="hljs-string">"Click me"</span> <span class="hljs-attr">onClick</span>=<span class="hljs-string">{handleClick}</span> /&gt;</span></span>;
+};
+</code></div></div></pre><p>This example creates a <code>Button</code> component and passes it the text "Click me" and a callback function called <code>handleClick</code> that will be called when the button is clicked.</p><p>Hope this helps! Let me know if you have any other questions.</p>`)
+  );
 })();
