@@ -1,7 +1,7 @@
 import './utils/env';
 import { App, LogLevel } from '@slack/bolt';
-import { Server as WebSocketServer } from 'ws';
-import { NodeHtmlMarkdown } from 'node-html-markdown';
+
+import { Configuration, OpenAIApi } from 'openai'
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -10,103 +10,15 @@ const app = new App({
   logLevel: LogLevel.INFO,
   socketMode: true,
 });
-const ws = new WebSocketServer({ port: parseInt(process.env.WS_PORT || '3001') });
 const notifiee = process.env.STATUS_CHECK_SLACK_MEMBER as string;
-const markdownParser = new NodeHtmlMarkdown({
-  strongDelimiter: '*',
-  strikeDelimiter: '~',
-  bulletMarker: '-',
-  ignore: ['button', 'svg'],
-  codeFence: '```',
-  // textReplace: [
-  //   [/\<span/g, '<p'],
-  //   [/\span\>/g, 'p>'],
-  // ],
+const whitelistedChannels = process.env.SLACK_WHITELISTED_CHANNELS?.split(',') || [];
+
+const openAIConfig = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY,
 });
+const openai = new OpenAIApi(openAIConfig);
 
-function sendStatusCheckMessage(connected: boolean | string) {
-  return app.client.chat.postMessage({
-    token: app.client.token as string,
-    channel: notifiee,
-    text:
-      typeof connected === 'boolean'
-        ? `ChatGPT WebSocket ${connected ? 'connected :white_check_mark:' : 'disconnected :x:'}`
-        : connected,
-  });
-}
-
-type Payload = { text: string; ts: string; thread_ts?: string; channel: string };
-
-// only send one message when the websocket is disconnected
-let sessionExpired = false;
-
-ws.on('connection', (socket) => {
-  sendStatusCheckMessage(true);
-
-  socket.on('message', (message) => {
-    const packet = JSON.parse(message.toString());
-
-    switch (packet.type) {
-      case 'response':
-        handleWSResponse(packet.payload);
-        return;
-      case 'session_expired':
-        if (sessionExpired) return;
-
-        sendStatusCheckMessage('ChatGPT session expired :x:');
-
-        sessionExpired = true;
-        return;
-    }
-  });
-});
-
-ws.on('close', () => {
-  sendStatusCheckMessage(false);
-});
-
-function sendWSPrompt(payload: Payload) {
-  ws.clients.forEach((client) => {
-    client.send(
-      JSON.stringify({
-        type: 'prompt',
-        payload,
-      })
-    );
-  });
-}
-
-async function handleWSResponse(response: Payload) {
-  const mrkdwn = markdownParser.translate(response.text);
-  await app.client.chat.postMessage({
-    token: app.client.token as string,
-    channel: response.channel,
-    thread_ts: response.thread_ts ?? response.ts,
-    text: mrkdwn,
-    blocks: [
-      {
-        type: 'section',
-        text: {
-          type: 'mrkdwn',
-          text: mrkdwn,
-        },
-      },
-    ],
-  });
-}
-
-app.use(async ({ next }) => {
-  await next();
-});
-
-const whitelistedChannels = [
-  // #chatgpt-test for Cali's testing
-  'C04EXK6T85U',
-  // #chatgpt-playground for the public
-  'C04F7ML901G',
-];
-
-// Listens to incoming messages that contain "hello"
+// Listens to incoming messages that starts with "q?"
 app.message(/^q\?/, async ({ message, say }) => {
   // Filter out messages from channels that are not whitelisted
   if (!whitelistedChannels.includes(message.channel)) {
@@ -123,22 +35,33 @@ app.message(/^q\?/, async ({ message, say }) => {
 
     if (prompt.length === 0) return;
 
-    if (sessionExpired) {
-      await say({
-        text: `ChatGPT session expired, need to re-login in browser. /cc <@${notifiee}>`,
-        thread_ts: thread_ts ?? ts,
-        channel,
-      });
-      return;
+    const response = await openai.createChatCompletion({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        }
+      ],
+      temperature: 0,
+    });
+
+    if (response.data.choices.length > 0) {
+      const message = response.data.choices[response.data.choices.length - 1].message?.content
+      if (message) {
+        await say({
+          text: message,
+          channel,
+          thread_ts: thread_ts || ts,
+        });
+        return;
+      }
     }
 
-    sendWSPrompt({ text: prompt, ts, thread_ts, channel });
-
-    await app.client.reactions.add({
-      token: app.client.token as string,
-      name: 'typingcat',
+    await say({
+      text: 'Sorry, something went wrong. Please try again later.',
       channel,
-      timestamp: ts,
+      thread_ts: thread_ts || ts,
     });
   }
 });

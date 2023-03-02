@@ -1,7 +1,4 @@
-# chatgpt-slack
-
-`content.js` 是 Arc Boost
-`src/app.ts` 是 WebSocket + Slack bot 服务器
+# ChatGPT Slack Bot
 
 ```bash
 npm i
