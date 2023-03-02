@@ -53,6 +53,15 @@ app.message(/^q\?/, async ({ message, say }) => {
           text: message,
           channel,
           thread_ts: thread_ts || ts,
+          blocks: [
+            {
+              type: 'section',
+              text: {
+                type: 'mrkdwn',
+                text: message,
+              }
+            }
+          ]
         });
         return;
       }
