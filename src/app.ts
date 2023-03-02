@@ -1,7 +1,7 @@
 import './utils/env';
 import { App, LogLevel } from '@slack/bolt';
 
-import { Configuration, OpenAIApi } from 'openai'
+import { Configuration, OpenAIApi } from 'openai';
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,
@@ -24,7 +24,6 @@ app.message(/^q\?/, async ({ message, say }) => {
   if (!whitelistedChannels.includes(message.channel)) {
     return;
   }
-
   // Filter out message events with subtypes (see https://api.slack.com/events/message)
   if (message.subtype === undefined || message.subtype === 'bot_message') {
     const { text, ts, channel, thread_ts } = message;
@@ -36,18 +35,18 @@ app.message(/^q\?/, async ({ message, say }) => {
     if (prompt.length === 0) return;
 
     const response = await openai.createChatCompletion({
-      model: "gpt-3.5-turbo",
+      model: 'gpt-3.5-turbo',
       messages: [
         {
-          role: "user",
+          role: 'user',
           content: prompt,
-        }
+        },
       ],
-      temperature: 0,
+      temperature: 0.1,
     });
 
     if (response.data.choices.length > 0) {
-      const message = response.data.choices[response.data.choices.length - 1].message?.content
+      const message = response.data.choices[response.data.choices.length - 1].message?.content;
       if (message) {
         await say({
           text: message,
@@ -59,9 +58,9 @@ app.message(/^q\?/, async ({ message, say }) => {
               text: {
                 type: 'mrkdwn',
                 text: message,
-              }
-            }
-          ]
+              },
+            },
+          ],
         });
         return;
       }
@@ -72,6 +71,53 @@ app.message(/^q\?/, async ({ message, say }) => {
       channel,
       thread_ts: thread_ts || ts,
     });
+  }
+});
+
+// Listens to incoming messages that starts with "i?"
+app.message(/^i\?/, async ({ message, say }) => {
+  // Filter out messages from channels that are not whitelisted
+  if (!whitelistedChannels.includes(message.channel)) {
+    return;
+  }
+  // Filter out message events with subtypes (see https://api.slack.com/events/message)
+  if (message.subtype === undefined || message.subtype === 'bot_message') {
+    const { text, ts, channel, thread_ts } = message;
+    // check if the message is a valid string
+    if (typeof text !== 'string') return;
+
+    const prompt = text?.replace(/^i\?/, '').trim();
+
+    if (prompt.length === 0) return;
+
+    const response = await openai.createImage({
+      prompt,
+      size: '512x512',
+      response_format: 'url',
+    });
+
+    if (response.data.data.length > 0) {
+      await say({
+        text: `Here's an image for "${prompt}"`,
+        channel,
+        thread_ts: thread_ts || ts,
+        blocks: [
+          {
+            type: 'section',
+            text: {
+              type: 'mrkdwn',
+              text: `Here's an image for "${prompt}"`,
+            },
+          },
+          ...response.data.data.map(({ url }) => ({
+            type: 'image',
+            image_url: url,
+            alt_text: prompt,
+          })),
+        ],
+      });
+      return;
+    }
   }
 });
 (async () => {
