@@ -34,11 +34,8 @@ To create a Slack bot on the Slack website, follow these steps:
 - chat:write
 - groups:history
 - groups:read
-- im:write
-- reactions:write
 - users:write
-- usergroups:read
-- users:rea
+- users:read
 
 11. Scroll up to the "OAuth Tokens for Your Workspace" section and click the "Install App to Workspace" button. Grant the requested permissions.
 12. After installing the app, you'll see the "Bot User OAuth Token" under "OAuth Tokens for Your Workspace." Copy this token and use it as your SLACK_BOT_TOKEN.
