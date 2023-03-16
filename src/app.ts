@@ -138,7 +138,8 @@ app.message(/tldr/i, async ({ message, say, client }) => {
 
       const inEnglish = message.text?.includes(' en');
 
-      const threadMessages = result.messages.map((msg) => ({
+      const filteredMessages = result.messages.filter((msg) => msg.ts !== message.ts);
+      const threadMessages = filteredMessages.map((msg) => ({
         user: msg.user ? members[msg.user] : null,
         text: msg.text,
       }));
@@ -146,7 +147,7 @@ app.message(/tldr/i, async ({ message, say, client }) => {
       const prompt = `Generate TL;DR for the following conversation${
         inEnglish ? ' in English' : ' in Simplified Chinese'
       }}:\n
-      \n${consolidatedMessages}`;
+      ${consolidatedMessages}`;
 
       const response = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo',
