@@ -1,9 +1,52 @@
 # ChatGPT Slack Bot
 
+Make sure to enter your env variables in `.env`
+
 ```bash
-npm i
+pnpm i
+cp .env.example .env
 # development
-npm run dev
+pnpm dev
 # production
-npm run start
+pnpm start
 ```
+
+## How do I create a Slack bot?
+
+To create a Slack bot on the Slack website, follow these steps:
+
+1. Go to the Slack API website: https://api.slack.com/
+2. Sign in to your Slack account or create a new one if you haven't already.
+3. Click on the "Your Apps" button on the top-right corner of the page, or use this direct link: https://api.slack.com/apps
+4. Click the "Create New App" button.
+5. In the "Create a Slack App" dialog, enter the following information:
+   App Name: Choose a name for your Slack bot.
+   Development Slack Workspace: Select a workspace where you want to develop and test your Slack bot.
+   Click the "Create App" button.
+6. After creating the app, you'll be redirected to the "Basic Information" page. Here, you can find your "App ID" and manage your app settings.
+7. Under "Add features and functionality," click on "Bots" and then click the "Add a bot" button to add a bot user to your app.
+8. Set a display name and default username for your bot and click "Add Bot" to save.
+9. From the left sidebar, click on "OAuth & Permissions" under "Features."
+10. Scroll down to the "Scopes" section and add the necessary bot token scopes. For the example provided in the previous answer, you'll need the following scopes:
+
+- app_mentions:read
+- channels:history
+- chat:write
+- groups:history
+- groups:read
+- im:write
+- reactions:write
+- users:write
+- usergroups:read
+- users:rea
+
+11. Scroll up to the "OAuth Tokens for Your Workspace" section and click the "Install App to Workspace" button. Grant the requested permissions.
+12. After installing the app, you'll see the "Bot User OAuth Token" under "OAuth Tokens for Your Workspace." Copy this token and use it as your SLACK_BOT_TOKEN.
+
+To enable Socket Mode (as used in the previous TypeScript example), follow these additional steps:
+
+1. From the left sidebar, click on "Socket Mode" under "Settings."
+2. Enable Socket Mode by toggling the switch.
+3. Click the "Generate Token" button to generate an App-Level token with the connections:write scope. Copy this token and use it as your SLACK_APP_TOKEN.
+
+Now you have created a Slack bot and have the necessary tokens to use with the example code provided earlier. Make sure to invite the bot to the channels where you want it to be active by typing `/invite @your-bot-username` in those channels.
