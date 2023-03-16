@@ -12,6 +12,7 @@ const app = new App({
 });
 const notifiee = process.env.STATUS_CHECK_SLACK_MEMBER as string;
 const whitelistedChannels = process.env.SLACK_WHITELISTED_CHANNELS?.split(',') || [];
+let members: Record<string, string> = {};
 
 const openAIConfig = new Configuration({
   apiKey: process.env.OPENAI_API_KEY,
@@ -120,9 +121,84 @@ app.message(/^i\?/, async ({ message, say }) => {
     }
   }
 });
+
+app.message(/tldr/i, async ({ message, say, client }) => {
+  console.log('Received message', message);
+  if (message.subtype === undefined && message.thread_ts) {
+    try {
+      const result = await client.conversations.replies({
+        channel: message.channel,
+        ts: message.thread_ts,
+      });
+
+      if (!result.messages) {
+        console.error('Could not retrieve messages in thread');
+        return;
+      }
+
+      const inEnglish = message.text?.includes(' en');
+
+      const threadMessages = result.messages.map((msg) => ({
+        user: msg.user ? members[msg.user] : null,
+        text: msg.text,
+      }));
+      const consolidatedMessages = threadMessages.map((msg) => `${msg.user}: ${msg.text}`).join('\n');
+      const prompt = `Generate TL;DR for the following conversation${
+        inEnglish ? ' in English' : ' in Simplified Chinese'
+      }}:\n
+      \n${consolidatedMessages}`;
+
+      const response = await openai.createChatCompletion({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.1,
+      });
+
+      if (response.data.choices.length > 0) {
+        const res = response.data.choices[response.data.choices.length - 1].message?.content;
+        if (res) {
+          await say({
+            text: res,
+            channel: message.channel,
+            thread_ts: message.thread_ts,
+            blocks: [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: res,
+                },
+              },
+            ],
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+});
+
 (async () => {
   // Start your app
   await app.start(Number(process.env.PORT) || 3000);
 
   console.log('⚡️ Bolt app is running!');
+
+  const result = await app.client.users.list();
+  if (result.members) {
+    members = result.members.reduce((acc, member) => {
+      if (member.id) {
+        acc[member.id] =
+          member.profile?.display_name || member.profile?.real_name || member.real_name || member.name || '';
+      }
+      return acc;
+    }, {} as Record<string, string>);
+  }
 })();
