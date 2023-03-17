@@ -74,7 +74,7 @@ Now you have created a Slack bot and have the necessary tokens to use with the e
 
 Make sure you have set whitelisted channels in your `.env` file.
 
-You can get Channel IDs by clicking on **Copy link** here:
+You can get Channel IDs by right-clicking on a channel in the side bar and click **Copy link** here:
 
 <img width="538" alt="Slack 2023-03-18 at 01 01 03@2x" src="https://user-images.githubusercontent.com/10830749/225970561-e16d585b-ee9e-4f9e-ab15-276932316731.png">
 
