@@ -11,6 +11,23 @@ pnpm dev
 pnpm start
 ```
 
+## Features
+
+### Ask questions
+![Ask Questions Demo](https://cdn.sanity.io/images/h37lu1pz/production/0c202a03ca243a6a5fbafdfbfc05c3cfe76d9d3e-1815x1021.png?w=850&fit=max&auto=format&dpr=2)
+
+Format: `q? <question>`
+
+### Generate images
+![Generate Images Demo](https://cdn.sanity.io/images/h37lu1pz/production/a04e980dbc82353ca4d40a32cdd323f2603e8b0e-1806x1016.png?w=850&fit=max&auto=format&dpr=2)
+
+Format: `i? <image prompt>`
+
+### Summarize TL;DR
+![Summarize TL;DR Demo](https://cdn.sanity.io/images/h37lu1pz/production/e0d0036c709956d5f042abe220a0717b80304b0c-2353x1324.png?w=850&fit=max&auto=format&dpr=2)
+
+Format: `@your-bot tldr`
+
 ## How do I create a Slack bot?
 
 To create a Slack bot on the Slack website, follow these steps:
